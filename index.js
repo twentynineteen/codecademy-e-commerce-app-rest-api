@@ -8,6 +8,7 @@ const passport = require('passport')
 const flash = require('express-flash')
 const session = require('express-session')
 const methodOverride = require('method-override')
+const db = require('./db')
 
 const initializePassport = require('./passport-config')
 initializePassport(
@@ -53,19 +54,18 @@ app.post('/login', checkNotAuthenticated,passport.authenticate('local', {
    failureFlash: true
 }))
 
+app.get('/users', db.getUsers)
+
 //register
 app.get('/register', checkNotAuthenticated, (req, res) => {
    res.render('register.ejs')
 })
 app.post('/register', checkNotAuthenticated, async (req, res) => {
    try {
-      const hashedPassword = await bcrypt.hash(req.body.password, 10)
-      users.push({
-         id: Date.now().toString(),
-         name: req.body.name,
-         email: req.body.email,
-         password: hashedPassword
-      })
+      // const hashedPassword = await bcrypt.hash(req.body.password, 10)
+      const newUser = await db.createUser(req)
+      console.log(`User Created - ${newUser.id}`)
+      
       res.redirect('/login')
    } catch {
       res.redirect('/register')
@@ -79,21 +79,6 @@ app.delete('/logout', (req, res, next) => {
       res.redirect('/login')
     })
 })
-
-
-//routes
-app.get('/products', getProducts)
-app.get('/products/:id', getProductId)
-app.post('/products/', (req, res)=>{
-   res.status
-})
-app.put('/products/:id', (req, res)=>{
-   res.status
-})
-app.delete('/products/:id', (req, res)=>{
-   res.status
-})
-
 
 
 //middleware
