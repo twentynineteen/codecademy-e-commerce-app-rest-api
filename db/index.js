@@ -21,6 +21,7 @@ const createUser = async (req, res) => {
   const { email, password, name } = req.body
   // contain within try catch so that it returns user id
   try {
+    // todo - insert bcrypt hash for password
     const newUser = await pool.query(
       'INSERT INTO users (email, password, name) VALUES ($1, $2, $3) RETURNING id;',
       [email, password, name])
