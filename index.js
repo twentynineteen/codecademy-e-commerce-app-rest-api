@@ -9,7 +9,6 @@ const flash = require('express-flash')
 const session = require('express-session')
 const methodOverride = require('method-override')
 
-
 const initializePassport = require('./passport-config')
 initializePassport(
    passport, 
@@ -19,12 +18,12 @@ initializePassport(
 )
 
 
-
 const { getProducts, getProductId } = require('./routes/products')
 
 const PORT = process.env.PORT || 5002
 const app = express()
 
+//blank array to store users - replace with connection to PG
 const users = []
 
 app.set('view-engine', 'ejs')
@@ -53,6 +52,7 @@ app.post('/login', checkNotAuthenticated,passport.authenticate('local', {
    failureRedirect: '/login',
    failureFlash: true
 }))
+
 //register
 app.get('/register', checkNotAuthenticated, (req, res) => {
    res.render('register.ejs')
@@ -70,14 +70,18 @@ app.post('/register', checkNotAuthenticated, async (req, res) => {
    } catch {
       res.redirect('/register')
    }
+})
 
-   console.log(users)
+//logout
+app.delete('/logout', (req, res, next) => {
+   req.logout(function(err) {
+      if (err) { return next(err) }
+      res.redirect('/login')
+    })
 })
 
 
 //routes
-
-
 app.get('/products', getProducts)
 app.get('/products/:id', getProductId)
 app.post('/products/', (req, res)=>{
@@ -90,11 +94,9 @@ app.delete('/products/:id', (req, res)=>{
    res.status
 })
 
-app.delete('/logout', (req, res) => {
-   req.logOut()
-   res.redirect('/login')
-})
 
+
+//middleware
 function checkAuthenticated(req, res, next) {
    if (req.isAuthenticated()) {
       return next()
