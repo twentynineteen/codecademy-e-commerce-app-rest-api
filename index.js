@@ -8,23 +8,21 @@ const passport = require('passport')
 const flash = require('express-flash')
 const session = require('express-session')
 const methodOverride = require('method-override')
+const db = require('./db')
 
 const initializePassport = require('./passport-config')
 initializePassport(
    passport, 
-   email => users.find(user => user.email === email),
-   id => users.find(user => user.id === id)
+   email => users.find(user => user.email === email), // scan pg instead of array
+   user => db.query('SELECT id, name, email FROM users WHERE id = $1',[user.id], (err,result) => { if (err) { return err} else return result})
 
 )
-
 
 const { getProducts, getProductId } = require('./routes/products')
 
 const PORT = process.env.PORT || 5002
 const app = express()
 
-//blank array to store users - replace with connection to PG
-const users = []
 
 app.set('view-engine', 'ejs')
 app.use(express.urlencoded({ extended: false}))
@@ -36,22 +34,25 @@ app.use(session({
 }))
 app.use(passport.initialize())
 app.use(passport.session())
-app.use(methodOverride('_method'))
+app.use(methodOverride('_method')) 
 
 
 //home
 app.get('/', checkAuthenticated, (req, res)=>{
-   res.render('index.ejs', { name: req.user.name })
+   const { id, name, email } = req.user.rows[0]
+   res.render('index.ejs', { name: name })
 })
 //login
 app.get('/login', checkNotAuthenticated, (req, res) => {
    res.render('login.ejs')
 })
-app.post('/login', checkNotAuthenticated,passport.authenticate('local', {
+app.post('/login', checkNotAuthenticated, passport.authenticate('local', {
    successRedirect: '/',
    failureRedirect: '/login',
    failureFlash: true
 }))
+
+app.get('/users', db.getUsers)
 
 //register
 app.get('/register', checkNotAuthenticated, (req, res) => {
@@ -59,13 +60,11 @@ app.get('/register', checkNotAuthenticated, (req, res) => {
 })
 app.post('/register', checkNotAuthenticated, async (req, res) => {
    try {
-      const hashedPassword = await bcrypt.hash(req.body.password, 10)
-      users.push({
-         id: Date.now().toString(),
-         name: req.body.name,
-         email: req.body.email,
-         password: hashedPassword
-      })
+      // const hashedPassword = await bcrypt.hash(req.body.password, 10)
+      
+      const newUser = await db.createUser(req)
+      console.log(`User Created - ${newUser.id} - ${newUser.name}`)
+      
       res.redirect('/login')
    } catch {
       res.redirect('/register')
@@ -79,21 +78,6 @@ app.delete('/logout', (req, res, next) => {
       res.redirect('/login')
     })
 })
-
-
-//routes
-app.get('/products', getProducts)
-app.get('/products/:id', getProductId)
-app.post('/products/', (req, res)=>{
-   res.status
-})
-app.put('/products/:id', (req, res)=>{
-   res.status
-})
-app.delete('/products/:id', (req, res)=>{
-   res.status
-})
-
 
 
 //middleware
