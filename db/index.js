@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 const { PG } = require('../config');
+const bcrypt = require('bcrypt')
 
 const pool = new Pool({
   user: PG.PGUSER,
@@ -17,14 +18,23 @@ const getUsers = (req, res) => {
     res.status(200).json(results.rows)
    })
 }
+
+const hashPassword = async (password) => {
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10)
+    return hashedPassword
+  } catch (err) {
+    return err.stack
+  }
+}
+
 const createUser = async (req, res) => {
   const { email, password, name } = req.body
-  // contain within try catch so that it returns user id
   try {
-    // todo - insert bcrypt hash for password
+    const hashedPassword = await hashPassword(password)
     const newUser = await pool.query(
       'INSERT INTO users (email, password, name) VALUES ($1, $2, $3) RETURNING id;',
-      [email, password, name])
+      [email, hashedPassword, name])
     return newUser.rows[0]
     } catch (err) {
       return err.stack
