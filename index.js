@@ -14,19 +14,15 @@ const initializePassport = require('./passport-config')
 initializePassport(
    passport, 
    email => users.find(user => user.email === email), // scan pg instead of array
-   id => users.find(user => user.id === id)
+   user => db.query('SELECT id, name, email FROM users WHERE id = $1',[user.id], (err,result) => { if (err) { return err} else return result})
 
 )
-
-const users = await db.getUsers
 
 const { getProducts, getProductId } = require('./routes/products')
 
 const PORT = process.env.PORT || 5002
 const app = express()
 
-//blank array to store users - replace with connection to PG
-const users = []
 
 app.set('view-engine', 'ejs')
 app.use(express.urlencoded({ extended: false}))
@@ -43,7 +39,8 @@ app.use(methodOverride('_method'))
 
 //home
 app.get('/', checkAuthenticated, (req, res)=>{
-   res.render('index.ejs', { name: req.user.name })
+   const { id, name, email } = req.user.rows[0]
+   res.render('index.ejs', { name: name })
 })
 //login
 app.get('/login', checkNotAuthenticated, (req, res) => {
@@ -66,7 +63,7 @@ app.post('/register', checkNotAuthenticated, async (req, res) => {
       // const hashedPassword = await bcrypt.hash(req.body.password, 10)
       
       const newUser = await db.createUser(req)
-      console.log(`User Created - ${newUser.id}`)
+      console.log(`User Created - ${newUser.id} - ${newUser.name}`)
       
       res.redirect('/login')
    } catch {
