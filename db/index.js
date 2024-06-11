@@ -19,6 +19,16 @@ const getUsers = (req, res) => {
    })
 }
 
+const getUser = (email) => {
+  
+   pool.query('SELECT * FROM users WHERE email = $1 ORDER BY id ASC',[email], (error, results) => {
+    if (error) {
+      throw error
+    }
+    res.status(200).json(results.rows)
+   })
+}
+
 const hashPassword = async (password) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10)

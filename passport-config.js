@@ -1,9 +1,13 @@
 const LocalStrategy = require('passport-local').Strategy
 const bcrypt = require('bcrypt')
 
+
 function initialize(passport, getUserByEmail, getUserById) {
    const authenticateUser = async (email, password, done) => {
+      console.log(email)
+      console.log(password) // prints submitted details correctly - check with db below
       const user = getUserByEmail(email)
+      
       if (user == null) {
          return done(null, false, { message: "No user with that email"})
       }

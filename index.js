@@ -13,11 +13,12 @@ const db = require('./db')
 const initializePassport = require('./passport-config')
 initializePassport(
    passport, 
-   email => users.find(user => user.email === email),
+   email => users.find(user => user.email === email), // scan pg instead of array
    id => users.find(user => user.id === id)
 
 )
 
+const users = await db.getUsers
 
 const { getProducts, getProductId } = require('./routes/products')
 
@@ -37,7 +38,7 @@ app.use(session({
 }))
 app.use(passport.initialize())
 app.use(passport.session())
-app.use(methodOverride('_method'))
+app.use(methodOverride('_method')) 
 
 
 //home
@@ -48,7 +49,7 @@ app.get('/', checkAuthenticated, (req, res)=>{
 app.get('/login', checkNotAuthenticated, (req, res) => {
    res.render('login.ejs')
 })
-app.post('/login', checkNotAuthenticated,passport.authenticate('local', {
+app.post('/login', checkNotAuthenticated, passport.authenticate('local', {
    successRedirect: '/',
    failureRedirect: '/login',
    failureFlash: true
@@ -63,6 +64,7 @@ app.get('/register', checkNotAuthenticated, (req, res) => {
 app.post('/register', checkNotAuthenticated, async (req, res) => {
    try {
       // const hashedPassword = await bcrypt.hash(req.body.password, 10)
+      
       const newUser = await db.createUser(req)
       console.log(`User Created - ${newUser.id}`)
       
